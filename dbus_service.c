@@ -5,6 +5,48 @@
  * write signal handler that cleanly kills off daemon
  */
 
+void handle_dispatch_status(DBusConnection *dconn, DBusDispatchStatus status, void *data)
+{
+	syslog(LOG_NOTICE, "handle_dispatch_status() called");
+}
+
+dbus_bool_t handle_add_watch(DBusWatch *watch, void *data)
+{
+	syslog(LOG_NOTICE, "handle_add_watch() called");
+	return TRUE;
+}
+
+void handle_remove_watch(DBusWatch *watch, void *data)
+{
+	syslog(LOG_NOTICE, "handle_remove_watch() called");
+}
+
+void handle_watch_toggled(DBusWatch *watch, void *data)
+{
+	syslog(LOG_NOTICE, "handle_watch_toggled() called");
+}
+
+dbus_bool_t handle_add_timeout(DBusTimeout *timeout, void *data)
+{
+	syslog(LOG_NOTICE, "handle_add_timeout() called");
+	return TRUE;
+}
+
+void handle_remove_timeout(DBusTimeout *timeout, void *data)
+{
+	syslog(LOG_NOTICE, "handle_remove_timeout() called");
+}
+
+void handle_timeout_toggled(DBusTimeout *timeout, void *data)
+{
+	syslog(LOG_NOTICE, "handle_timeout_toggled() called");
+}
+
+void handle_free_data(void *mem)
+{
+	syslog(LOG_NOTICE, "handle_free_data() called");
+}
+
 DBusHandlerResult handle_message(DBusConnection *connection, DBusMessage *message, void *user_data)
 {
 	syslog(LOG_NOTICE, "handle_message(...) invoked!");
@@ -46,6 +88,14 @@ DBusConnection * dbus_service_setup(void)
 		exit(EXIT_FAILURE);
 	}
 
+	///TODO: check return value of following and act appropriately
+	dbus_connection_set_dispatch_status_function(dconn, handle_dispatch_status, NULL, handle_free_data);
+
+	dbus_connection_set_watch_functions(dconn, handle_add_watch, handle_remove_watch, handle_watch_toggled, NULL, handle_free_data);
+
+	dbus_connection_set_timeout_functions(dconn, handle_add_timeout, handle_remove_timeout, handle_timeout_toggled, NULL, handle_free_data);
+
+
 	/* Setup function handlers */
 	memset(&vtable, 0, sizeof(vtable));
 	vtable.message_function = handle_message;
@@ -64,50 +114,10 @@ DBusConnection * dbus_service_setup(void)
 void dbus_service_listen(DBusConnection *dconn)
 {
 
-	DBusMessage *dmsg;
-
 	/* If the connection is closed, the function returns FALSE.
 	 *
 	 * 0 is max time to block
 	 */
 	while(dbus_connection_read_write_dispatch(dconn, 0)) {
-
-		/*
-		 * dbus_connection_pop_message() is only intended for very simple
-		 * applications, which this is. This function is incompatible
-		 * with registered message handlers as it will simply bypass them.
-		 *
-		 * TODO: use function handlers instead
-		 */
-		/*dmsg = dbus_connection_pop_message(dconn);
-		if (dmsg == NULL) {
-			/* queue is empty *
-			continue;
-		}
-		else {
-			syslog(LOG_NOTICE, "msg type: %d", dbus_message_get_type(dmsg));
-			syslog(LOG_NOTICE, "object path: %s", dbus_message_get_path(dmsg));
-			syslog(LOG_NOTICE, "interface: %s", dbus_message_get_interface(dmsg));
-			syslog(LOG_NOTICE, "destination: %s", dbus_message_get_destination(dmsg));
-			syslog(LOG_NOTICE,"sender: %s", dbus_message_get_sender(dmsg));
-		}
-
-		/*
-		 * Expose two methods on the com.example.HelloWorld interface
-		 * 
-		 * [1]=interface, [2]=method
-		 *
-		if (dbus_message_is_method_call(dmsg, "com.example.HelloWorld", "Echo")) {
-			syslog(LOG_NOTICE, "Hello, world!");
-		}
-		else if (dbus_message_is_method_call(dmsg, "com.example.HelloWorld", "Exit")) {
-			syslog(LOG_NOTICE, "Goodbye.");
-			dbus_message_unref(dmsg);
-			closelog();
-			exit(EXIT_SUCCESS);
-		}
-		/* When count reaches 0, free the message*
-		dbus_message_unref(dmsg);
-		*/
 	}
 }
