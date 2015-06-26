@@ -1,4 +1,5 @@
 #include "daemon.h"
+#include <dbus/dbus.h>
 #include "dbus_service.h"
 
 /*
@@ -9,8 +10,11 @@
 
 int main(void)
 {
+	DBusConnection *dconn;
 	daemonize();
 
 	/* at this point we're the child */
-	setup_dbus_service();
+	dconn = dbus_service_setup();
+	dbus_service_listen(dconn);
+	exit(EXIT_FAILURE);
 }

@@ -14,13 +14,13 @@ void daemonize(void)
 
 	/* Become new process group leader */
 	if (setsid() < 0) {
-		syslog(LOG_NOTICE, "setsid() failed. Error: %\n", strerror(errno));
+		syslog(LOG_NOTICE, "setsid() failed. Error: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	/* Overwrite parent's cwd */
 	if(chdir("/") < 0) {
-		syslog(LOG_NOTICE, "chdir() to root directory failed. Error: %s\n", strerror(errno));
+		syslog(LOG_NOTICE, "chdir() to root directory failed. Error: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	/* Close standard file descriptors */

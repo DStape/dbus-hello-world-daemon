@@ -9,7 +9,6 @@ DBusConnection * dbus_service_setup(void)
 {
 	DBusConnection *dconn;
 	DBusError derr;
-	DBusMessage *dmsg;
 	int ret;
 
 	dbus_error_init(&derr);
