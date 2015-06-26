@@ -69,7 +69,6 @@ void dbus_service_listen(DBusConnection *dconn)
 			syslog(LOG_NOTICE, "interface: %s", dbus_message_get_interface(dmsg));
 			syslog(LOG_NOTICE, "destination: %s", dbus_message_get_destination(dmsg));
 			syslog(LOG_NOTICE,"sender: %s", dbus_message_get_sender(dmsg));
-			//free the message
 		}
 
 		/*
@@ -82,9 +81,11 @@ void dbus_service_listen(DBusConnection *dconn)
 		}
 		else if (dbus_message_is_method_call(dmsg, "com.example.HelloWorld", "Exit")) {
 			syslog(LOG_NOTICE, "Goodbye.");
-			//what needs to be freed?
+			dbus_message_unref(dmsg);
 			closelog();
 			exit(EXIT_SUCCESS);
 		}
+		/* When count reaches 0, free the message*/
+		dbus_message_unref(dmsg);
 	}
 }
