@@ -5,12 +5,11 @@
  * write signal handler that cleanly kills off daemon
  */
 
-void setup_dbus_service(void)
+DBusConnection * dbus_service_setup(void)
 {
 	DBusConnection *dconn;
 	DBusError derr;
 	DBusMessage *dmsg;
-	dbus_bool_t connected = TRUE;
 	int ret;
 
 	dbus_error_init(&derr);
@@ -39,6 +38,13 @@ void setup_dbus_service(void)
 		syslog(LOG_NOTICE, "We failed to become the primary owner :(");
 		exit(EXIT_FAILURE);
 	}
+	return dconn;
+}
+
+void dbus_service_listen(DBusConnection *dconn)
+{
+
+	DBusMessage *dmsg;
 
 	/* If the connection is closed, the function returns FALSE.
 	 *
@@ -83,4 +89,3 @@ void setup_dbus_service(void)
 		}
 	}
 }
-

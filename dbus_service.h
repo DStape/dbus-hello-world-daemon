@@ -4,4 +4,5 @@
 #include <syslog.h>
 
 /* prototypes */
-extern void setup_dbus_service(void);
+extern DBusConnection * dbus_service_setup(void);
+extern void dbus_service_listen(DBusConnection *);
