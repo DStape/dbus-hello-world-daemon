@@ -16,10 +16,13 @@ At the moment, there is one interface: "com.example.HelloWorld". This exposes tw
 When invoked, this will simply print "Hello, world!" to the system log (/var/log/messages).
 
 # com.example.HelloWorld.Exit
-Invoking this method will gracefully terminate the daemon.
+Invoking this method will gracefully terminate the daemon
 
 # Client
 You can write your own client or use the dbus-send tool. W.r.t. the latter, to invoke the Echo method, run: "dbus-send --system --dest=com.example.HelloWorld --type=method_call /com/example/HelloWorld com.example.HelloWorld.Echo".
+
+# How do I know it's working?
+tail -f /var/log/messages | grep helloworld_dbus_daemon
 
 # Gotchas
 You will more than likely need to edit the dbus-service configuration file. This can be found @ /et c/dbus-1/system.d/dbus_service.conf. More info can be found at http://dbus.freedesktop.org/doc/dbus-daemon.1.html.
