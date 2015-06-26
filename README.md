@@ -6,6 +6,13 @@ Implement a simple dbus daemon that exposes an interface that will allow other d
 # Package requirements
 libdbus-1-3 and libdbus-1-dev (for dev headers)
 
+# Branches
+master contains bleeding edge so will probably not work.
+
+very\_simple makes use of dbus\_connection\_pop\_message(). This alleviates the need to implement function handlers.
+
+not-compatible-with-asynchronous-messages as the name suggests, makes use of dbus\_connection\_read\_write\_dispatch() which blocks on I/O - so it cannot be interrupted.
+
 # Starting the daemon
 Simply run ./dbus_helloworld_service. Use the busctl utility to verify that the daemon is up and running and can be reached via the well-known name of "com.example.HelloWorld".
 
@@ -26,3 +33,6 @@ tail -f /var/log/messages | grep helloworld_dbus_daemon
 
 # Gotchas
 You will more than likely need to edit the dbus-service configuration file. This can be found @ /et c/dbus-1/system.d/dbus_service.conf. More info can be found at http://dbus.freedesktop.org/doc/dbus-daemon.1.html.
+
+#TODO
+loads...
