@@ -1,18 +1,21 @@
 # TACACS+ D-Bus Daemon
 
 # Aim
-Initial aim was to implement a simple dbus application (written as a daemon) that exposed one interface allowing other dbus applications to invoke some methods. This has been achieved, please switches to branches dbus\_connection\_pop\_message and register-function-handler for more information.
+Initial aim was to implement a simple dbus application (written as a daemon) that exposes one interface allowing other dbus applications to invoke some methods. This has been achieved, please switch to branches dbus\_connection\_pop\_message and register-function-handler for more information.
 
-Next aim is to expose new methods via one interface that makes the daemon connect with a TACAS+ server and perform AAA. So far, username/password authentication can be done. 
+Next aim is to expose new methods via one interface that makes the daemon connect with a TACACS+ server and perform AAA. So far, username/password authentication has been implemented. 
 
 # Package requirements
-libdbus-1-3, libdbus-1-dev and libtac. The former two should be available in your distribution's official repos. libtac can be cloned from https://github.com/jeroennijhof/pam_tacplus. Follow the steps there for building and installing, although the typical "autoreconf -i ; ./configure ; make ; make install" should suffice.
+libdbus-1-3, libdbus-1-dev and libtac. The former two should be available in your distribution's official repos. libtac can be cloned from https://github.com/jeroennijhof/pam_tacplus. Follow the steps there for building and installing, although the typical "autoreconf -i ; ./configure ; make ; make install" pattern should suffice.
 
 # TACACS+ server
 apt-get install tacacs+
-The configuration file exists is /etc/tacacs+/tac_plus.conf. I won't go into detail on all the configuration options, not least because I've only recently starting using this myself. There are many docs and tutorials online, however I found the following site particularly useful: https://networklessons.com/linux/how-to-install-tacacs-on-linux-centos/.
+The TACACS+ configuration exists in /etc/tacacs+/tac_plus.conf. Configuration details are not mentioned here, however the defaults should be enough to get you started. There are many docs and tutorials online, however the following is recommended: https://networklessons.com/linux/how-to-install-tacacs-on-linux-centos/.
 
-For the sake of simplicity, leave the default configuration to use /etc/passwd as the databse.
+For the sake of simplicity, leave the default configuration to use /etc/passwd as the database.
+
+# Building the TACACS+ D-Bus daemon
+Simply run 'make'.
 
 # Starting the TACACS+ D-Bus daemon
 Simply run ./dbus_helloworld_service. Use the busctl utility to verify that the daemon is up and running and can be reached via the well-known name of "com.example.HelloWorld".
@@ -24,7 +27,7 @@ At the moment, there is one interface: "com.example.HelloWorld". This exposes fo
 Instructs the daemon to connect to the TACACS+ server. At the moment, the location is hard-coded to localhost:49 (TACACS default port, as per RFC-1492).
 
 # com.example.HelloWorld.Authenticate
-If a connection has been established, the daemon will send an authentication request with the currently hard-coded values of user="testuser", password="testpassword". (To add a new user, simply run 'sudo adduser testuser' and follow the prompt).
+If a connection has been established, the daemon will send an authentication request with the currently hard-coded values of user="testuser", password="testpassword". (To add a new user, simply run 'sudo adduser testuser' and follow the prompt. When you're done, 'sudo deluser testuser'.).
 
 #com.example.HelloWorld.Disconnect
 This will terminate the connection with the TACACS+ server, if it has been established.
@@ -33,7 +36,7 @@ This will terminate the connection with the TACACS+ server, if it has been estab
 The daemon will terminate its connection with the TACACS+ server and will exit.
 
 # Client
-You can write your own client or use the dbus-send tool. W.r.t. the latter, to invoke the Echo method, run: "dbus-send --system --dest=com.example.HelloWorld --type=method_call /com/example/HelloWorld com.example.HelloWorld.Connect".
+You can write your own client or use the dbus-send tool. W.r.t. the latter, to invoke the Connect method, run: "dbus-send --system --dest=com.example.HelloWorld --type=method_call /com/example/HelloWorld com.example.HelloWorld.Connect".
 
 # How do I know it's working?
 tail -f /var/log/messages | grep helloworld_dbus_daemon
