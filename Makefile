@@ -4,7 +4,7 @@ CC=gcc
 CFLAGS=-W -Wall -pedantic
 
 all:
-	$(CC) $(CFLAGS) dbus_service.c main.c daemon.c `pkg-config --cflags --libs dbus-1` -o dbus_helloworld_service
+	$(CC) $(CFLAGS) dbus_service.c main.c daemon.c `pkg-config --cflags --libs dbus-1 libtac` -o dbus_helloworld_service
 
 clean:
 	rm -f dbus_helloworld_service

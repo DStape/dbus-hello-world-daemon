@@ -1,13 +1,121 @@
+#include <libtac.h>
 #include "dbus_service.h"
 
 /*
  * TODO
  * write signal handler that cleanly kills off daemon
+ * function prototypes
+ * parse args and use these instead of hardcoding server, user, passwd, etc
+ * wrap lines at 72
  */
+
+static int connected = FALSE;
+static int tac_fd;
+
+void handle_open_conn(void)
+{
+	struct addrinfo hints;
+	struct addrinfo *result;
+	int fd;
+
+	if (connected) {
+		syslog(LOG_NOTICE, "We're already connected via fd %d", tac_fd);
+		return;
+	}
+	syslog(LOG_NOTICE, "AAAAAAAA");
+	memset(&hints, 0, sizeof(struct addrinfo));
+	getaddrinfo("localhost", "49", &hints, &result);
+
+	fd = tac_connect_single(result, NULL, NULL);
+	if (fd < 0) {
+		syslog(LOG_NOTICE, "Failed to connect to server");
+		close(fd);
+		connected = FALSE;
+	}
+	syslog(LOG_NOTICE, "We connected!");
+	tac_fd = fd;
+	connected = TRUE;
+}
+
+void handle_do_auth(void)
+{
+	int reply;
+	int fd = tac_fd;
+
+	if (!connected) {
+		syslog(LOG_NOTICE, "Not yet connected to server");
+		return;
+	}
+	/* tac_auth_send(...[3]...) (tty):
+	 *
+	 * The ASCII name of the client port on which the authentication is
+	 * taking place. The value of this field is client specific. (For
+	 * example, Cisco uses "tty10" to denote the tenth tty line and
+	 * "Async10" to denote the tenth async interface).
+	 *
+	 * tac_auth_send(...[4]...) (r_addr):
+	 *
+	 * An ASCII string that describes the user’s remote location.
+	 * This field is optional (since the information may not be available).
+	 *
+	 */
+	if (tac_authen_send(tac_fd, "testuser", "testpassword", "", "") < 0) {
+		syslog(LOG_NOTICE, "Failed to send auth request to server");
+		close(fd);
+		connected = FALSE;
+	}
+
+	reply = tac_authen_read(fd);
+	if (reply == TAC_PLUS_AUTHEN_STATUS_PASS) {
+		syslog(LOG_NOTICE, "Authentication success!");
+	}
+	else {
+		syslog(LOG_NOTICE, "Authentication failed.");
+	}
+}
+
+void disconnect_from_server(void)
+{
+	if (connected) {
+		/* TODO check return value */
+		close(tac_fd);
+		connected = FALSE;
+		syslog(LOG_NOTICE, "Disconnection successful");
+	}
+	else {
+		syslog(LOG_NOTICE, "We're not connected.");
+	}
+}
+
+void stop_service(DBusConnection *dconn)
+{
+	disconnect_from_server();
+	dbus_connection_unref(dconn);
+}
 
 DBusHandlerResult handle_message(DBusConnection *connection, DBusMessage *message, void *user_data)
 {
-	syslog(LOG_NOTICE, "handle_message(...) invoked!");
+	/* TODO: case statement on method? */
+	if (dbus_message_is_method_call (message, "com.example.HelloWorld", "Connect")) {
+		syslog(LOG_NOTICE, "Connect method called.");
+		handle_open_conn();
+	}
+	else if (dbus_message_is_method_call (message, "com.example.HelloWorld", "Authenticate")) {
+		syslog(LOG_NOTICE, "Authenticate method called");
+		handle_do_auth();
+	}
+	else if (dbus_message_is_method_call (message, "com.example.HelloWorld", "Disconnect")) {
+		syslog(LOG_NOTICE, "Disconnecting...");
+		disconnect_from_server();
+	}
+	else if (dbus_message_is_method_call (message, "com.example.HelloWorld", "Stop")) {
+		syslog(LOG_NOTICE, "Stopping...");
+		stop_service(connection);
+	}
+	else {
+		syslog(LOG_NOTICE, "Unkown message received");
+	}
+	/* TODO free msg and user_data */
 	return DBUS_HANDLER_RESULT_HANDLED;
 }
 
@@ -53,11 +161,9 @@ DBusConnection * dbus_service_setup(void)
 	dret = dbus_connection_register_object_path(dconn, "/com/example/HelloWorld", &vtable, NULL); //NULL is user_data
 	syslog(LOG_NOTICE, "dret false? %d\n", dret==FALSE);
 	if (!dret) {
-		syslog(LOG_NOTICE, "We failed to register object path: %s", \
-							dret == DBUS_ERROR_OBJECT_PATH_IN_USE ? \
-							"DBUS_ERROR_OBJECT_PATH_IN_USE" : \
-							"DBUS_ERROR_NO_MEMORY");
+		syslog(LOG_NOTICE, "We failed to register object path");
 	}
+	/* TODO: add filters */
 	return dconn;
 }
 
@@ -66,48 +172,12 @@ void dbus_service_listen(DBusConnection *dconn)
 
 	DBusMessage *dmsg;
 
-	/* If the connection is closed, the function returns FALSE.
-	 *
-	 * 0 is max time to block
+	/*
+	 * If the connection is closed, the function returns FALSE.
 	 */
-	while(dbus_connection_read_write_dispatch(dconn, 0)) {
+	while(dbus_connection_read_write_dispatch(dconn, 0)) {;}
 
-		/*
-		 * dbus_connection_pop_message() is only intended for very simple
-		 * applications, which this is. This function is incompatible
-		 * with registered message handlers as it will simply bypass them.
-		 *
-		 * TODO: use function handlers instead
-		 */
-		/*dmsg = dbus_connection_pop_message(dconn);
-		if (dmsg == NULL) {
-			/* queue is empty *
-			continue;
-		}
-		else {
-			syslog(LOG_NOTICE, "msg type: %d", dbus_message_get_type(dmsg));
-			syslog(LOG_NOTICE, "object path: %s", dbus_message_get_path(dmsg));
-			syslog(LOG_NOTICE, "interface: %s", dbus_message_get_interface(dmsg));
-			syslog(LOG_NOTICE, "destination: %s", dbus_message_get_destination(dmsg));
-			syslog(LOG_NOTICE,"sender: %s", dbus_message_get_sender(dmsg));
-		}
+	syslog(LOG_NOTICE, "Connection closed.");
 
-		/*
-		 * Expose two methods on the com.example.HelloWorld interface
-		 * 
-		 * [1]=interface, [2]=method
-		 *
-		if (dbus_message_is_method_call(dmsg, "com.example.HelloWorld", "Echo")) {
-			syslog(LOG_NOTICE, "Hello, world!");
-		}
-		else if (dbus_message_is_method_call(dmsg, "com.example.HelloWorld", "Exit")) {
-			syslog(LOG_NOTICE, "Goodbye.");
-			dbus_message_unref(dmsg);
-			closelog();
-			exit(EXIT_SUCCESS);
-		}
-		/* When count reaches 0, free the message*
-		dbus_message_unref(dmsg);
-		*/
-	}
+	/* TODO cleanup */
 }
